@@ -31,7 +31,12 @@
  */
 size_t btok(size_t bytes)
 {
-    //DO NOT use math.pow
+    size_t kVal = 0;
+    while (bytes > 0) {
+        bytes = bytes >> 1;     // Decrease a power of 2
+        kVal++;                 // Increase by 1
+    }
+    return kVal;
 }
 
 struct avail *buddy_calc(struct buddy_pool *pool, struct avail *buddy)
@@ -61,19 +66,19 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
 
 }
 
-/**
- * @brief This is a simple version of realloc.
- *
- * @param poolThe memory pool
- * @param ptr  The user memory
- * @param size the new size requested
- * @return void* pointer to the new user memory
- */
-void *buddy_realloc(struct buddy_pool *pool, void *ptr, size_t size)
-{
-    //Required for Grad Students
-    //Optional for Undergrad Students
-}
+// /**
+//  * @brief This is a simple version of realloc.
+//  *
+//  * @param poolThe memory pool
+//  * @param ptr  The user memory
+//  * @param size the new size requested
+//  * @return void* pointer to the new user memory
+//  */
+// void *buddy_realloc(struct buddy_pool *pool, void *ptr, size_t size)
+// {
+//     //Required for Grad Students
+//     //Optional for Undergrad Students
+// }
 
 void buddy_init(struct buddy_pool *pool, size_t size)
 {

@@ -133,6 +133,18 @@ void test_buddy_init(void)
     }
 }
 
+/* NEW TESTS START */
+
+void test_btok(void)
+{
+  fprintf(stderr, "->Testing btok\n");
+
+  assert(btok(30) == 5);
+  assert(btok(2097000) == 21);
+  assert(btok(64) == 7);   // Check that extra space is made for overhead
+}
+
+/* NEW TESTS END*/
 
 int main(void) {
   time_t t;
@@ -142,6 +154,7 @@ int main(void) {
   printf("Running memory tests.\n");
 
   UNITY_BEGIN();
+  RUN_TEST(test_btok);
   RUN_TEST(test_buddy_init);
   RUN_TEST(test_buddy_malloc_one_byte);
   RUN_TEST(test_buddy_malloc_one_large);

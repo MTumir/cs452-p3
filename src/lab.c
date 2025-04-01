@@ -33,8 +33,8 @@ size_t btok(size_t bytes)
 {
     size_t kVal = 0;
     while (bytes > 0) {
-        bytes = bytes >> 1;     // Decrease a power of 2
-        kVal++;                 // Increase by 1
+        bytes = bytes >> UINT64_C(1);     // Decrease a power of 2
+        kVal++;                           // Increase by 1
     }
     return kVal;
 }

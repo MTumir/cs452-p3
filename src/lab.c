@@ -23,12 +23,6 @@
         raise(SIGKILL);          \
     } while (0)
 
-/**
- * @brief Convert bytes to the correct K value
- *
- * @param bytes the number of bytes
- * @return size_t the K value that will fit bytes
- */
 size_t btok(size_t bytes)
 {
     if (!bytes) {
@@ -90,20 +84,6 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
 
 
 }
-
-// /**
-//  * @brief This is a simple version of realloc.
-//  *
-//  * @param poolThe memory pool
-//  * @param ptr  The user memory
-//  * @param size the new size requested
-//  * @return void* pointer to the new user memory
-//  */
-// void *buddy_realloc(struct buddy_pool *pool, void *ptr, size_t size)
-// {
-//     //Required for Grad Students
-//     //Optional for Undergrad Students
-// }
 
 void buddy_init(struct buddy_pool *pool, size_t size)
 {

@@ -31,6 +31,10 @@
  */
 size_t btok(size_t bytes)
 {
+    if (!bytes) {
+        return -1;
+    }
+
     size_t kVal = 0;
     while (bytes > 0) {
         bytes = bytes >> UINT64_C(1);     // Decrease a power of 2
@@ -41,17 +45,34 @@ size_t btok(size_t bytes)
 
 struct avail *buddy_calc(struct buddy_pool *pool, struct avail *buddy)
 {
+    if (!pool || !buddy) {
+        return NULL;
+    }
 
+    // todo probably wrong but idek what would go here
+    return buddy->next;
 }
 
 void *buddy_malloc(struct buddy_pool *pool, size_t size)
 {
+    if (!pool || !size) {
+        return;
+    }
 
     //get the kval for the requested size with enough room for the tag and kval fields
+    size_t kVal = btok(size + sizeof(pool->avail->tag) + sizeof(pool->avail->kval));
 
     //R1 Find a block
+    struct avail *block = (pool->avail);
+
+    fprintf(stderr, "\tBlock = %d\tkVal = %d\n", block->kval, kVal);
+    // fprintf(stderr, "\tSize = %d\ttag = %d\tkVal = %d\n", size, sizeof(pool->avail->tag), sizeof(pool->avail->kval));
 
     //There was not enough memory to satisfy the request thus we need to set error and return NULL
+    if (block->kval < kVal) {
+        handle_error_and_die("Not enough memory, returning NULL.");
+        return NULL;
+    }
 
     //R2 Remove from list;
 
@@ -63,6 +84,10 @@ void *buddy_malloc(struct buddy_pool *pool, size_t size)
 
 void buddy_free(struct buddy_pool *pool, void *ptr)
 {
+    if (!pool || !ptr) {
+        return;
+    }
+
 
 }
 

@@ -56,21 +56,7 @@ void *buddy_malloc(struct buddy_pool *pool, size_t size)
     // Get the k_val for the given size with extra space for overhead
     size_t k = btok(size + sizeof(&pool->avail->tag) + sizeof(&pool->avail->kval));
 
-    /*
-    CHEAT SHEET
-AVAILF[k] 	pool->avail[k].next
-AVAILB[k] 	pool->avail[k].prev
-LOC(AVAIL[k]) 	&pool->avail[k]
-LINKF(L) 	L->next
-LINKB(L) 	L->prev
-TAG(L) 	L->tag
-KVAL(L) 	L->kval
-buddyk(L) 	buddy_calc(pool, L);
-
-fprintf(stderr, "\t1 = %d\tk2 = %d\n", pool->avail[requested_k].tag, BLOCK_AVAIL);
-    */
-
-    //R1 - Find block    
+    //R1 - [Find block.]    
     size_t j = 0;      // k_val of smallest empty block greater than or equal to requested_k
     for (size_t temp_j = k; j <= pool->kval_m; j++) {
         if (&pool->avail[temp_j] != BLOCK_RESERVED) {
@@ -85,16 +71,16 @@ fprintf(stderr, "\t1 = %d\tk2 = %d\n", pool->avail[requested_k].tag, BLOCK_AVAIL
         return NULL;
     }
 
-    //R2 - Remove from list
+    //R2 - [Remove from list.]
     struct avail *L = pool->avail[j].next;  // Block we discovered in R1
     struct avail *P = L->next;
     pool->avail[j].next = P;
     P->prev = &pool->avail[j];
     L->tag = BLOCK_RESERVED;
     
-    //R3 - Split required?
+    //R3 - [Split required?]
     while (j != k) {
-        //R4 - Split
+        //R4 - [Split.]
         j--;
         P = (struct avail *)(L + (UINT64_C(1) << j));
         P->tag = BLOCK_AVAIL;
@@ -112,7 +98,40 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
         return;
     }
 
+    struct avail *L = (struct avail *)&ptr;
+    size_t k = L->kval;
 
+    //S1 - [Is buddy available?]
+    struct avail *P = buddy_calc(pool, L);
+    while (k != pool->kval_m && P->tag != BLOCK_RESERVED && !(P->tag == BLOCK_AVAIL && P->kval != k)) {
+        //S2 - [Combine with buddy.]
+        P->prev->next = P->next;
+        P->next->prev = P->prev;
+        k++;
+
+        // If P < L, set L = P
+        size_t arr_len = sizeof(&pool->avail) / sizeof(&pool->avail[0]);
+        for (size_t i = 0; i < arr_len; i++) {
+            if (&pool->avail[i] == P) {
+                break;
+            } else if (&pool->avail[i] == L) {
+                L = P;
+                break;
+            }
+        }
+
+        // Return to S1.
+        P = buddy_calc(pool, L);
+    }
+    
+    //S3 - [Put on list.]
+    L->tag = BLOCK_AVAIL;
+    P = pool->avail[k].next;
+    L->next = P;
+    P->prev = L;
+    L->kval = k;
+    L->prev = &pool->avail[k];
+    pool->avail[k].next = L;
 }
 
 void buddy_init(struct buddy_pool *pool, size_t size)

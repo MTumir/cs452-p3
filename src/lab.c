@@ -29,12 +29,12 @@ size_t btok(size_t bytes)
         return -1;
     }
 
-    size_t kVal = 0;
+    size_t k_val = 0;
     while (bytes > 0) {
         bytes = bytes >> UINT64_C(1);     // Decrease a power of 2
-        kVal++;                           // Increase by 1
+        k_val++;                          // Increase by 1
     }
-    return kVal;
+    return k_val;
 }
 
 struct avail *buddy_calc(struct buddy_pool *pool, struct avail *buddy)
@@ -50,30 +50,60 @@ struct avail *buddy_calc(struct buddy_pool *pool, struct avail *buddy)
 void *buddy_malloc(struct buddy_pool *pool, size_t size)
 {
     if (!pool || !size) {
-        return;
+        return NULL;
     }
 
-    //get the kval for the requested size with enough room for the tag and kval fields
-    size_t kVal = btok(size + sizeof(pool->avail->tag) + sizeof(pool->avail->kval));
+    // Get the k_val for the given size with extra space for overhead
+    size_t k = btok(size + sizeof(&pool->avail->tag) + sizeof(&pool->avail->kval));
 
-    //R1 Find a block
-    struct avail *block = (pool->avail);
+    /*
+    CHEAT SHEET
+AVAILF[k] 	pool->avail[k].next
+AVAILB[k] 	pool->avail[k].prev
+LOC(AVAIL[k]) 	&pool->avail[k]
+LINKF(L) 	L->next
+LINKB(L) 	L->prev
+TAG(L) 	L->tag
+KVAL(L) 	L->kval
+buddyk(L) 	buddy_calc(pool, L);
 
-    fprintf(stderr, "\tBlock = %d\tkVal = %d\n", block->kval, kVal);
-    // fprintf(stderr, "\tSize = %d\ttag = %d\tkVal = %d\n", size, sizeof(pool->avail->tag), sizeof(pool->avail->kval));
+fprintf(stderr, "\t1 = %d\tk2 = %d\n", pool->avail[requested_k].tag, BLOCK_AVAIL);
+    */
 
-    //There was not enough memory to satisfy the request thus we need to set error and return NULL
-    if (block->kval < kVal) {
+    //R1 - Find block    
+    size_t j = 0;      // k_val of smallest empty block greater than or equal to requested_k
+    for (size_t temp_j = k; j <= pool->kval_m; j++) {
+        if (&pool->avail[temp_j] != BLOCK_RESERVED) {
+            j = temp_j;
+            break;
+        }
+    }
+
+    if (j == 0) {
+        // set error?
         handle_error_and_die("Not enough memory, returning NULL.");
         return NULL;
     }
 
-    //R2 Remove from list;
+    //R2 - Remove from list
+    struct avail *L = pool->avail[j].next;  // Block we discovered in R1
+    struct avail *P = L->next;
+    pool->avail[j].next = P;
+    P->prev = &pool->avail[j];
+    L->tag = BLOCK_RESERVED;
+    
+    //R3 - Split required?
+    while (j != k) {
+        //R4 - Split
+        j--;
+        P = (struct avail *)(L + (UINT64_C(1) << j));
+        P->tag = BLOCK_AVAIL;
+        P->kval = j;
+        P->next = P->prev = &pool->avail[j];
+        pool->avail[j].next = pool->avail[j].prev = P;
+    }
 
-    //R3 Split required?
-
-    //R4 Split the block
-
+    return (void *)(L + sizeof(L));
 }
 
 void buddy_free(struct buddy_pool *pool, void *ptr)

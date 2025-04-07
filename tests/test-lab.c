@@ -74,8 +74,11 @@ void test_buddy_malloc_one_byte(void)
   buddy_init(&pool, size);
   void *mem = buddy_malloc(&pool, 1);
   //Make sure correct kval was allocated
+  fprintf(stderr, "->Pool: %d\n", (pool.base != NULL));
   buddy_free(&pool, mem);
+  fprintf(stderr, "->ITS WORKING\n");
   check_buddy_pool_full(&pool);
+  fprintf(stderr, "->IT WORKED\n");
   buddy_destroy(&pool);
 }
 
@@ -144,6 +147,42 @@ void test_btok(void)
   assert(btok(64) == 7);   // Check that extra space is made for overhead
 }
 
+void test_buddy_calc(void)
+{
+  fprintf(stderr, "->Testing buddy_calc\n");
+
+  // Setup
+  struct buddy_pool pool;
+  size_t size = UINT64_C(1) << UINT64_C(5); // 2^5 bytes
+  buddy_init(&pool, size);
+  size_t k_val = UINT64_C(1);
+  struct avail *buddy = pool.base;
+  buddy->kval = k_val;
+
+  // Test
+  size_t address = (size_t)buddy - (size_t)pool.base;    
+  size_t operand = UINT64_C(1) << buddy->kval;   
+  struct avail* expected = (struct avail *)((address ^ operand) + (size_t)pool.base);
+  struct avail* actual = buddy_calc(&pool, buddy);
+
+  // Results
+  TEST_ASSERT_EQUAL(expected, actual);
+}
+
+void test_buddy_malloc(void)
+{
+  fprintf(stderr, "->Testing buddy_malloc\n");
+
+  // TODO
+}
+
+void test_buddy_free(void)
+{
+  fprintf(stderr, "->Testing buddy_free\n");
+
+  // TODO
+}
+
 /* NEW TESTS END*/
 
 int main(void) {
@@ -155,6 +194,8 @@ int main(void) {
 
   UNITY_BEGIN();
   RUN_TEST(test_btok);
+  RUN_TEST(test_buddy_calc);
+
   RUN_TEST(test_buddy_init);
   RUN_TEST(test_buddy_malloc_one_byte);
   RUN_TEST(test_buddy_malloc_one_large);

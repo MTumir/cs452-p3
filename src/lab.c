@@ -43,8 +43,11 @@ struct avail *buddy_calc(struct buddy_pool *pool, struct avail *buddy)
         return NULL;
     }
 
-    // todo probably wrong but idek what would go here
-    return buddy->next;
+    size_t address = (size_t)buddy - (size_t)pool->base;    // Remove base address for XOR operation
+    size_t operand = UINT64_C(1) << buddy->kval;            // 2^k
+
+    // Add base address back in after XOR operation
+    return (struct avail *)((address ^ operand) + (size_t)pool->base);
 }
 
 void *buddy_malloc(struct buddy_pool *pool, size_t size)
@@ -66,8 +69,7 @@ void *buddy_malloc(struct buddy_pool *pool, size_t size)
     }
 
     if (j == 0) {
-        // set error?
-        handle_error_and_die("Not enough memory, returning NULL.");
+        perror("Not enough memory, returning NULL.");
         return NULL;
     }
 
@@ -98,7 +100,7 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
         return;
     }
 
-    struct avail *L = (struct avail *)&ptr;
+    struct avail *L = (struct avail *)ptr;
     size_t k = L->kval;
 
     //S1 - [Is buddy available?]

@@ -30,9 +30,10 @@ size_t btok(size_t bytes)
     }
 
     size_t k_val = 0;
-    while (bytes > 0) {
-        bytes = bytes >> UINT64_C(1);     // Decrease a power of 2
+    size_t mult = UINT64_C(1) << k_val;
+    while (bytes > mult) {
         k_val++;                          // Increase by 1
+        mult = UINT64_C(1) << k_val;      // 2^k
     }
     return k_val;
 }
@@ -60,9 +61,9 @@ void *buddy_malloc(struct buddy_pool *pool, size_t size)
     size_t k = btok(size + sizeof(&pool->avail->tag) + sizeof(&pool->avail->kval));
 
     //R1 - [Find block.]    
-    size_t j = 0;      // k_val of smallest empty block greater than or equal to requested_k
-    for (size_t temp_j = k; j <= pool->kval_m; j++) {
-        if (&pool->avail[temp_j] != BLOCK_RESERVED) {
+    size_t j = 0;      // k_val of smallest empty block greater than or equal to k
+    for (size_t temp_j = k; temp_j <= pool->kval_m; temp_j++) {
+        if (pool->avail[temp_j].next != &pool->avail[temp_j]) {
             j = temp_j;
             break;
         }
@@ -81,20 +82,18 @@ void *buddy_malloc(struct buddy_pool *pool, size_t size)
     L->tag = BLOCK_RESERVED;
     
     //R3 - [Split required?]
-    while (j != k) {
+    while (j > k) {
         //R4 - [Split.]
         j--;
-        P = (struct avail *)(L + (UINT64_C(1) << j));
+        P = (struct avail *)((size_t)L + (UINT64_C(1) << j));
         P->tag = BLOCK_AVAIL;
         P->kval = j;
         P->next = P->prev = &pool->avail[j];
         pool->avail[j].next = pool->avail[j].prev = P;
     }
 
-    fprintf(stderr, "--->malloc loc: %d\n", (char *)L);
-
-    // return (void *)((char *)L + sizeof(struct avail));
-    return (void *)L;
+    L->kval = j;
+    return (void *)((char *)L + sizeof(struct avail));
 }
 
 void buddy_free(struct buddy_pool *pool, void *ptr)
@@ -104,11 +103,8 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
     }
 
     // Derive Knuth notation from parameters
-    // struct avail *L = (struct avail *)(ptr - sizeof(struct avail));
-    struct avail *L = (struct avail *)ptr;
+    struct avail *L = (struct avail *)(ptr - sizeof(struct avail));
     size_t k = L->kval;
-
-    fprintf(stderr, "--->free loc: %d\n", (char *)L);
 
     //S1 - [Is buddy available?]
     struct avail *P = buddy_calc(pool, L);
@@ -128,8 +124,6 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
         L->kval++;
         k = L->kval;
 
-        fprintf(stderr, "--->innit: %d\n", L->kval);
-
         if (P < L) {
             L = P;
         }
@@ -137,8 +131,6 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
         // Return to S1.
         P = buddy_calc(pool, L);
     }
-
-    fprintf(stderr, "--->we out: %d\n", L->kval);
 
     //S3 - [Put on list.]
     L->tag = BLOCK_AVAIL;

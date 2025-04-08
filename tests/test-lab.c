@@ -76,7 +76,6 @@ void test_buddy_malloc_one_byte(void)
   //Make sure correct kval was allocated
   buddy_free(&pool, mem);
   check_buddy_pool_full(&pool);
-  fprintf(stderr, "->IT WORKED\n");
   buddy_destroy(&pool);
 }
 
@@ -142,7 +141,7 @@ void test_btok(void)
 
   assert(btok(30) == 5);
   assert(btok(2097000) == 21);
-  assert(btok(64) == 7);   // Check that extra space is made for overhead
+  assert(btok(64) == 6);
 }
 
 void test_buddy_calc(void)

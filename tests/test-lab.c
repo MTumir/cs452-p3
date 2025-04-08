@@ -74,9 +74,7 @@ void test_buddy_malloc_one_byte(void)
   buddy_init(&pool, size);
   void *mem = buddy_malloc(&pool, 1);
   //Make sure correct kval was allocated
-  fprintf(stderr, "->Pool: %d\n", (pool.base != NULL));
   buddy_free(&pool, mem);
-  fprintf(stderr, "->ITS WORKING\n");
   check_buddy_pool_full(&pool);
   fprintf(stderr, "->IT WORKED\n");
   buddy_destroy(&pool);

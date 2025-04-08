@@ -91,7 +91,10 @@ void *buddy_malloc(struct buddy_pool *pool, size_t size)
         pool->avail[j].next = pool->avail[j].prev = P;
     }
 
-    return (void *)(L + sizeof(L));
+    fprintf(stderr, "--->malloc loc: %d\n", (char *)L);
+
+    // return (void *)((char *)L + sizeof(struct avail));
+    return (void *)L;
 }
 
 void buddy_free(struct buddy_pool *pool, void *ptr)
@@ -100,32 +103,43 @@ void buddy_free(struct buddy_pool *pool, void *ptr)
         return;
     }
 
+    // Derive Knuth notation from parameters
+    // struct avail *L = (struct avail *)(ptr - sizeof(struct avail));
     struct avail *L = (struct avail *)ptr;
     size_t k = L->kval;
 
+    fprintf(stderr, "--->free loc: %d\n", (char *)L);
+
     //S1 - [Is buddy available?]
     struct avail *P = buddy_calc(pool, L);
-    while (k != pool->kval_m && P->tag != BLOCK_RESERVED && !(P->tag == BLOCK_AVAIL && P->kval != k)) {
+    while (true) {
+        // If any of the following conditions are true, go to S3.
+        if (k == pool->kval_m) {
+            break;
+        } else if (P->tag == BLOCK_RESERVED) {
+            break;
+        } else if (P->tag == BLOCK_AVAIL && P->kval != k) {
+            break;
+        }
+
         //S2 - [Combine with buddy.]
         P->prev->next = P->next;
         P->next->prev = P->prev;
-        k++;
+        L->kval++;
+        k = L->kval;
 
-        // If P < L, set L = P
-        size_t arr_len = sizeof(&pool->avail) / sizeof(&pool->avail[0]);
-        for (size_t i = 0; i < arr_len; i++) {
-            if (&pool->avail[i] == P) {
-                break;
-            } else if (&pool->avail[i] == L) {
-                L = P;
-                break;
-            }
+        fprintf(stderr, "--->innit: %d\n", L->kval);
+
+        if (P < L) {
+            L = P;
         }
 
         // Return to S1.
         P = buddy_calc(pool, L);
     }
-    
+
+    fprintf(stderr, "--->we out: %d\n", L->kval);
+
     //S3 - [Put on list.]
     L->tag = BLOCK_AVAIL;
     P = pool->avail[k].next;

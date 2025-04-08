@@ -53,7 +53,7 @@ struct avail *buddy_calc(struct buddy_pool *pool, struct avail *buddy)
 
 void *buddy_malloc(struct buddy_pool *pool, size_t size)
 {
-    if (!pool || !size) {
+    if (!pool) {
         return NULL;
     }
 

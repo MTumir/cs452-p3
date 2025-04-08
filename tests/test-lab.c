@@ -166,20 +166,6 @@ void test_buddy_calc(void)
   TEST_ASSERT_EQUAL(expected, actual);
 }
 
-void test_buddy_malloc(void)
-{
-  fprintf(stderr, "->Testing buddy_malloc\n");
-
-  // TODO
-}
-
-void test_buddy_free(void)
-{
-  fprintf(stderr, "->Testing buddy_free\n");
-
-  // TODO
-}
-
 /* NEW TESTS END*/
 
 int main(void) {

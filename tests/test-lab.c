@@ -166,6 +166,79 @@ void test_buddy_calc(void)
   TEST_ASSERT_EQUAL(expected, actual);
 }
 
+// CR - Added additional unit test for more thorough malloc testing
+void test_buddy_malloc_eight_bytes(void)
+{
+  fprintf(stderr, "->Test allocating and freeing 8 bytes\n");
+
+  // Setup
+  struct buddy_pool pool;
+  buddy_init(&pool, UINT64_C(1) << DEFAULT_K);
+
+  // Test
+  void *mem = buddy_malloc(&pool, 8);
+  buddy_free(&pool, mem);
+  check_buddy_pool_full(&pool);
+
+  // Clean
+  buddy_destroy(&pool);
+}
+
+// CR - Added additional unit test for more thorough malloc testing
+void test_buddy_malloc_28_bytes(void)
+{
+  fprintf(stderr, "->Test allocating and freeing 28 bytes\n");
+
+  // Setup
+  struct buddy_pool pool;
+  buddy_init(&pool, UINT64_C(1) << DEFAULT_K);
+
+  // Test
+  void *mem = buddy_malloc(&pool, 28);
+  buddy_free(&pool, mem);
+  check_buddy_pool_full(&pool);
+
+  // Clean
+  buddy_destroy(&pool);
+}
+
+// CR - Added additional unit test for more thorough malloc testing
+void test_buddy_malloc_zero_bytes(void)
+{
+  fprintf(stderr, "->Test allocating and freeing 0 bytes\n");
+
+  // Setup
+  struct buddy_pool pool;
+  buddy_init(&pool, UINT64_C(1) << DEFAULT_K);
+
+  // Test
+  void *mem = buddy_malloc(&pool, 0);
+  buddy_free(&pool, mem);
+  check_buddy_pool_full(&pool);
+
+  // Clean
+  buddy_destroy(&pool);
+}
+
+// CR - Added additional unit test for more thorough malloc testing
+void test_buddy_malloc_over_limit(void)
+{
+  fprintf(stderr, "->Test allocating over pool size limit\n");
+
+  // Setup
+  struct buddy_pool pool;
+  size_t size = UINT64_C(1) << DEFAULT_K; // 2^30 bytes
+  buddy_init(&pool, size);
+
+  // Test
+  void *mem = buddy_malloc(&pool, size + 1);
+  TEST_ASSERT_EQUAL(mem, NULL);
+  check_buddy_pool_full(&pool);
+
+  // Clean
+  buddy_destroy(&pool);
+}
+
 /* NEW TESTS END*/
 
 int main(void) {
@@ -178,6 +251,10 @@ int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_btok);
   RUN_TEST(test_buddy_calc);
+  RUN_TEST(test_buddy_malloc_eight_bytes);
+  RUN_TEST(test_buddy_malloc_28_bytes);
+  RUN_TEST(test_buddy_malloc_zero_bytes);
+  RUN_TEST(test_buddy_malloc_over_limit);
 
   RUN_TEST(test_buddy_init);
   RUN_TEST(test_buddy_malloc_one_byte);
